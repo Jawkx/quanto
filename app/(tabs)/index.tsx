@@ -204,6 +204,10 @@ export default function ConverterScreen() {
   const handleEquals = () => {
     if (!isCalculating) return;
     const finalResult = calculate(firstOperand, currentValue, operator);
+    setHistoryRows((prev) => ([
+      ...prev,
+      { left: firstOperand, op: operator, right: currentValue, result: finalResult },
+    ]));
     setInput(String(Math.round(finalResult)));
     setFirstOperand(null);
     setOperator(null);
@@ -242,31 +246,33 @@ export default function ConverterScreen() {
                 onPress={() => openCurrencySelector('source')}
               >
                 <Text style={styles.currencyCode}>{sourceCurrency}</Text>
-                {isCalculating ? (
-                  <>
-                    {historyRows.length > 0 && (
-                      <View style={styles.historyStack}>
-                        {historyRows.map((row, index) => (
-                          <Text key={`hist-${index}`} style={styles.historyText}>
-                            {formatNumber(row.left)} {row.op} {formatNumber(row.right)} = {formatNumber(row.result)}
-                          </Text>
-                        ))}
-                      </View>
-                    )}
-                    <View style={styles.expressionRow}>
-                      <Text style={[styles.amount, { opacity: OPACITY.muted }]}>
-                        {formatNumber(firstOperand)} {operator}{' '}
-                      </Text>
-                      <Text style={styles.amount}>
-                        {formatNumber(currentValue)}
-                      </Text>
+                <>
+                  {historyRows.length > 0 && (
+                    <View style={styles.historyStack}>
+                      {historyRows.map((row, index) => (
+                        <Text key={`hist-${index}`} style={styles.historyText}>
+                          {formatNumber(row.left)} {row.op} {formatNumber(row.right)} = {formatNumber(row.result)}
+                        </Text>
+                      ))}
                     </View>
-                    <Text style={[styles.equalsSign, { opacity: OPACITY.muted }]}>=</Text>
-                    <Text style={styles.resultAmount}>{formatNumber(result)}</Text>
-                  </>
-                ) : (
-                  <Text style={styles.amount}>{formatNumber(currentValue)}</Text>
-                )}
+                  )}
+                  {isCalculating ? (
+                    <>
+                      <View style={styles.expressionRow}>
+                        <Text style={[styles.amount, { opacity: OPACITY.muted }]}>
+                          {formatNumber(firstOperand)} {operator}{' '}
+                        </Text>
+                        <Text style={styles.amount}>
+                          {formatNumber(currentValue)}
+                        </Text>
+                      </View>
+                      <Text style={[styles.equalsSign, { opacity: OPACITY.muted }]}>=</Text>
+                      <Text style={styles.resultAmount}>{formatNumber(result)}</Text>
+                    </>
+                  ) : (
+                    <Text style={styles.amount}>{formatNumber(currentValue)}</Text>
+                  )}
+                </>
               </Pressable>
             </View>
             <View style={styles.panelWrapper} {...targetPanResponder.panHandlers}>
