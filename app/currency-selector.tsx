@@ -1,6 +1,8 @@
 import { useState, useMemo } from 'react';
 import {
   FlatList,
+  KeyboardAvoidingView,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -84,31 +86,35 @@ export default function CurrencySelector() {
         <Pressable onPress={handleClose} hitSlop={8}>
           <Text style={styles.closeButton}>Cancel</Text>
         </Pressable>
-        <Text style={styles.title}>
-          {selectingFor === 'source' ? 'From Currency' : 'To Currency'}
-        </Text>
-        <View style={styles.placeholder} />
       </View>
 
-      <View style={styles.searchContainer}>
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search currency..."
-          placeholderTextColor={COLORS.textMuted}
-          value={search}
-          onChangeText={setSearch}
-          autoCapitalize="none"
-          autoCorrect={false}
+      <KeyboardAvoidingView
+        style={styles.keyboardAvoid}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+      >
+        <FlatList
+          data={filteredCurrencies}
+          renderItem={renderCurrency}
+          keyExtractor={(item) => item.code}
+          contentContainerStyle={styles.listContent}
+          keyboardShouldPersistTaps="handled"
         />
-      </View>
 
-      <FlatList
-        data={filteredCurrencies}
-        renderItem={renderCurrency}
-        keyExtractor={(item) => item.code}
-        contentContainerStyle={styles.listContent}
-        keyboardShouldPersistTaps="handled"
-      />
+        <SafeAreaView edges={['bottom']} style={styles.searchWrapper}>
+          <View style={styles.searchContainer}>
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search currency..."
+              placeholderTextColor={COLORS.textMuted}
+              value={search}
+              onChangeText={setSearch}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+          </View>
+        </SafeAreaView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -119,9 +125,6 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary,
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
   },
@@ -129,17 +132,15 @@ const styles = StyleSheet.create({
     color: COLORS.textMuted,
     fontSize: 16,
   },
-  title: {
-    color: COLORS.text,
-    fontSize: 17,
-    fontWeight: '600',
+  keyboardAvoid: {
+    flex: 1,
   },
-  placeholder: {
-    width: 50,
+  searchWrapper: {
+    backgroundColor: COLORS.primary,
   },
   searchContainer: {
     paddingHorizontal: 16,
-    paddingBottom: 12,
+    paddingVertical: 12,
   },
   searchInput: {
     backgroundColor: COLORS.secondary,
