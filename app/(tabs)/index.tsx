@@ -61,6 +61,9 @@ export default function ConverterScreen() {
   const [input, setInput] = useState('0');
   const [firstOperand, setFirstOperand] = useState<number | null>(null);
   const [operator, setOperator] = useState<Operator | null>(null);
+  const [historyRows, setHistoryRows] = useState<
+    { left: number; op: Operator; right: number; result: number }[]
+  >([]);
 
   const { sourceCurrency, targetCurrency, setSourceCurrency, setTargetCurrency, setSelectingFor } = useCurrency();
   const { rates, loading, error, refetch, convert } = useExchangeRates();
@@ -157,6 +160,7 @@ export default function ConverterScreen() {
       setInput('0');
       setFirstOperand(null);
       setOperator(null);
+      setHistoryRows([]);
       return;
     }
 
@@ -181,11 +185,16 @@ export default function ConverterScreen() {
     if (isCalculating) {
       // Chain: evaluate current expression, use result as new firstOperand
       const newFirst = calculate(firstOperand, currentValue, operator);
+      setHistoryRows((prev) => ([
+        ...prev,
+        { left: firstOperand, op: operator, right: currentValue, result: newFirst },
+      ]));
       setFirstOperand(newFirst);
       setOperator(op);
       setInput('0');
     } else {
       // Start new calculation
+      setHistoryRows([]);
       setFirstOperand(currentValue);
       setOperator(op);
       setInput('0');
@@ -235,6 +244,15 @@ export default function ConverterScreen() {
                 <Text style={styles.currencyCode}>{sourceCurrency}</Text>
                 {isCalculating ? (
                   <>
+                    {historyRows.length > 0 && (
+                      <View style={styles.historyStack}>
+                        {historyRows.map((row, index) => (
+                          <Text key={`hist-${index}`} style={styles.historyText}>
+                            {formatNumber(row.left)} {row.op} {formatNumber(row.right)} = {formatNumber(row.result)}
+                          </Text>
+                        ))}
+                      </View>
+                    )}
                     <View style={styles.expressionRow}>
                       <Text style={[styles.amount, { opacity: OPACITY.muted }]}>
                         {formatNumber(firstOperand)} {operator}{' '}
@@ -393,6 +411,15 @@ const styles = StyleSheet.create({
   expressionRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
+  },
+  historyStack: {
+    marginBottom: 6,
+  },
+  historyText: {
+    color: COLORS.text,
+    fontSize: 12,
+    opacity: OPACITY.muted,
+    lineHeight: 16,
   },
   equalsSign: {
     color: COLORS.text,
