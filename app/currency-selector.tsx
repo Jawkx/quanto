@@ -14,15 +14,7 @@ import { StatusBar } from 'expo-status-bar';
 import { router } from 'expo-router';
 import { currencies, Currency } from '@/constants/currencies';
 import { useCurrency } from '@/context/CurrencyContext';
-
-const COLORS = {
-  primary: '#030712',
-  secondary: '#374151',
-  text: '#ffffff',
-  textMuted: '#9ca3af',
-  border: '#4b5563',
-  selected: '#1f2937',
-};
+import { useTheme } from '@/context/ThemeContext';
 
 export default function CurrencySelector() {
   const [search, setSearch] = useState('');
@@ -34,6 +26,7 @@ export default function CurrencySelector() {
     selectingFor,
     setSelectingFor,
   } = useCurrency();
+  const { colors } = useTheme();
 
   const currentSelection = selectingFor === 'source' ? sourceCurrency : targetCurrency;
 
@@ -66,25 +59,25 @@ export default function CurrencySelector() {
     const isSelected = item.code === currentSelection;
     return (
       <Pressable
-        style={[styles.currencyItem, isSelected && styles.currencyItemSelected]}
+        style={[styles.currencyItem, isSelected && { backgroundColor: colors.selected }]}
         onPress={() => handleSelect(item)}
       >
         <View style={styles.currencyInfo}>
-          <Text style={styles.currencyCode}>{item.code}</Text>
-          <Text style={styles.currencyName}>{item.name}</Text>
+          <Text style={[styles.currencyCode, { color: colors.text }]}>{item.code}</Text>
+          <Text style={[styles.currencyName, { color: colors.textMuted }]}>{item.name}</Text>
         </View>
-        <Text style={styles.currencySymbol}>{item.symbol}</Text>
+        <Text style={[styles.currencySymbol, { color: colors.textMuted }]}>{item.symbol}</Text>
       </Pressable>
     );
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <StatusBar style="light" backgroundColor={COLORS.primary} />
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
+      <StatusBar style="light" backgroundColor={colors.background} />
 
       <View style={styles.header}>
         <Pressable onPress={handleClose} hitSlop={8}>
-          <Text style={styles.closeButton}>Cancel</Text>
+          <Text style={[styles.closeButton, { color: colors.textMuted }]}>Cancel</Text>
         </Pressable>
       </View>
 
@@ -101,12 +94,12 @@ export default function CurrencySelector() {
           keyboardShouldPersistTaps="handled"
         />
 
-        <SafeAreaView edges={['bottom']} style={styles.searchWrapper}>
+        <SafeAreaView edges={['bottom']} style={[styles.searchWrapper, { backgroundColor: colors.background }]}>
           <View style={styles.searchContainer}>
             <TextInput
-              style={styles.searchInput}
+              style={[styles.searchInput, { backgroundColor: colors.secondary, color: colors.text }]}
               placeholder="Search currency..."
-              placeholderTextColor={COLORS.textMuted}
+              placeholderTextColor={colors.textMuted}
               value={search}
               onChangeText={setSearch}
               autoCapitalize="none"
@@ -122,32 +115,26 @@ export default function CurrencySelector() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.primary,
   },
   header: {
     paddingHorizontal: 16,
     paddingVertical: 12,
   },
   closeButton: {
-    color: COLORS.textMuted,
     fontSize: 16,
   },
   keyboardAvoid: {
     flex: 1,
   },
-  searchWrapper: {
-    backgroundColor: COLORS.primary,
-  },
+  searchWrapper: {},
   searchContainer: {
     paddingHorizontal: 16,
     paddingVertical: 12,
   },
   searchInput: {
-    backgroundColor: COLORS.secondary,
     borderRadius: 10,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    color: COLORS.text,
     fontSize: 16,
   },
   listContent: {
@@ -162,24 +149,18 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginBottom: 4,
   },
-  currencyItemSelected: {
-    backgroundColor: COLORS.selected,
-  },
   currencyInfo: {
     flex: 1,
   },
   currencyCode: {
-    color: COLORS.text,
     fontSize: 16,
     fontWeight: '600',
   },
   currencyName: {
-    color: COLORS.textMuted,
     fontSize: 14,
     marginTop: 2,
   },
   currencySymbol: {
-    color: COLORS.textMuted,
     fontSize: 18,
     marginLeft: 12,
   },

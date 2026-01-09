@@ -1,19 +1,15 @@
 import { useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, PanResponder, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { currencies } from '@/constants/currencies';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { router } from 'expo-router';
 import { useExchangeRates } from '@/hooks/useExchangeRates';
 import { useCurrency } from '@/context/CurrencyContext';
+import { useTheme } from '@/context/ThemeContext';
 
 const MAX_DIGITS = 12;
-
-const COLORS = {
-  primary: '#374151',
-  secondary: '#111827',
-  text: '#ffffff',
-};
 
 const OPACITY = {
   muted: 0.3,
@@ -68,6 +64,7 @@ export default function ConverterScreen() {
 
   const { sourceCurrency, targetCurrency, setSourceCurrency, setTargetCurrency, setSelectingFor } = useCurrency();
   const { rates, loading, error, refetch, convert } = useExchangeRates();
+  const { colors } = useTheme();
 
   const openCurrencySelector = (side: 'source' | 'target') => {
     setSelectingFor(side);
@@ -215,26 +212,35 @@ export default function ConverterScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.primary }]} edges={['left', 'right', 'bottom']}>
       <StatusBar style="light" backgroundColor="transparent" translucent />
 
       <View style={styles.topSection}>
         <View style={styles.backgroundSplit} pointerEvents="none">
-          <View style={styles.backgroundLeft} />
-          <View style={styles.backgroundRight} />
+          <View style={[styles.backgroundLeft, { backgroundColor: colors.primary }]} />
+          <View style={[styles.backgroundRight, { backgroundColor: colors.secondary }]} />
         </View>
 
         <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
-          <Text style={styles.appName}>Quanto</Text>
+          <View style={styles.headerLeft}>
+            <Text style={[styles.appName, { color: colors.text }]}>Quanto</Text>
+            <Pressable
+              style={styles.settingsButton}
+              onPress={() => router.push('/settings')}
+              hitSlop={8}
+            >
+              <Ionicons name="settings-outline" size={18} color={colors.text} />
+            </Pressable>
+          </View>
           <View style={styles.rateInfo}>
             {loading ? (
-              <ActivityIndicator size="small" color={COLORS.text} />
+              <ActivityIndicator size="small" color={colors.text} />
             ) : error ? (
               <Pressable onPress={refetch}>
-                <Text style={styles.errorText}>Tap to retry</Text>
+                <Text style={[styles.errorText, { color: colors.error }]}>Tap to retry</Text>
               </Pressable>
             ) : rateDisplay ? (
-              <Text style={styles.rateText}>{rateDisplay}</Text>
+              <Text style={[styles.rateText, { color: colors.text }]}>{rateDisplay}</Text>
             ) : null}
           </View>
         </View>
@@ -246,12 +252,12 @@ export default function ConverterScreen() {
                 style={[styles.panel, styles.leftPanel]}
                 onPress={() => openCurrencySelector('source')}
               >
-                <Text style={styles.currencyCode}>{sourceCurrency}</Text>
+                <Text style={[styles.currencyCode, { color: colors.text }]}>{sourceCurrency}</Text>
                 <>
                   {historyRows.length > 0 && (
                     <View style={styles.historyStack}>
                       {historyRows.map((row, index) => (
-                        <Text key={`hist-${index}`} style={styles.historyText}>
+                        <Text key={`hist-${index}`} style={[styles.historyText, { color: colors.text }]}>
                           {formatNumber(row.left)} {row.op} {formatNumber(row.right)} = {formatNumber(row.result)}
                         </Text>
                       ))}
@@ -260,18 +266,18 @@ export default function ConverterScreen() {
                   {isCalculating ? (
                     <>
                       <View style={styles.expressionRow}>
-                        <Text style={[styles.amount, { opacity: OPACITY.muted }]}>
+                        <Text style={[styles.amount, { color: colors.text, opacity: OPACITY.muted }]}>
                           {formatNumber(firstOperand)} {operator}{' '}
                         </Text>
-                        <Text style={styles.amount}>
+                        <Text style={[styles.amount, { color: colors.text }]}>
                           {formatNumber(currentValue)}
                         </Text>
                       </View>
-                      <Text style={[styles.equalsSign, { opacity: OPACITY.muted }]}>=</Text>
-                      <Text style={styles.resultAmount}>{formatNumber(result)}</Text>
+                      <Text style={[styles.equalsSign, { color: colors.text, opacity: OPACITY.muted }]}>=</Text>
+                      <Text style={[styles.resultAmount, { color: colors.text }]}>{formatNumber(result)}</Text>
                     </>
                   ) : (
-                    <Text style={styles.amount}>{formatNumber(currentValue)}</Text>
+                    <Text style={[styles.amount, { color: colors.text }]}>{formatNumber(currentValue)}</Text>
                   )}
                 </>
               </Pressable>
@@ -281,15 +287,15 @@ export default function ConverterScreen() {
                 style={[styles.panel, styles.rightPanel]}
                 onPress={() => openCurrencySelector('target')}
               >
-                <Text style={styles.currencyCode}>{targetCurrency}</Text>
-                <Text style={styles.amount}>{displayTarget}</Text>
+                <Text style={[styles.currencyCode, { color: colors.text }]}>{targetCurrency}</Text>
+                <Text style={[styles.amount, { color: colors.text }]}>{displayTarget}</Text>
               </Pressable>
             </View>
           </View>
         </View>
       </View>
 
-      <View style={styles.bottomSection}>
+      <View style={[styles.bottomSection, { backgroundColor: colors.primary }]}>
         <View style={styles.operatorRow}>
           {operatorKeys.map((op) => {
             const isSelected = operator === op;
@@ -298,14 +304,14 @@ export default function ConverterScreen() {
                 key={op}
                 style={[
                   styles.operatorButton,
-                  isSelected && styles.operatorButtonSelected,
+                  isSelected && { backgroundColor: colors.secondary },
                 ]}
                 onPress={() => handleOperatorPress(op as Operator)}
               >
                 <Text
                   style={[
                     styles.operatorText,
-                    { opacity: operatorsEnabled ? OPACITY.active : OPACITY.muted },
+                    { color: colors.text, opacity: operatorsEnabled ? OPACITY.active : OPACITY.muted },
                   ]}
                 >
                   {op}
@@ -323,7 +329,7 @@ export default function ConverterScreen() {
             <Text
               style={[
                 styles.operatorText,
-                { opacity: isCalculating ? OPACITY.active : OPACITY.muted },
+                { color: colors.text, opacity: isCalculating ? OPACITY.active : OPACITY.muted },
               ]}
             >
               =
@@ -334,20 +340,17 @@ export default function ConverterScreen() {
         <View style={styles.keypad}>
           {keypadRows.map((row, rowIndex) => (
             <View key={`row-${rowIndex}`} style={styles.keypadRow}>
-              {row.map((key) => {
-                const isAction = key === 'C' || key === '⌫';
-                return (
-                  <Pressable
-                    key={key}
-                    style={styles.keypadKey}
-                    onPress={() => handleKeyPress(key)}
-                  >
-                    <Text style={[styles.keypadText, isAction && styles.keypadTextAction]}>
-                      {key}
-                    </Text>
-                  </Pressable>
-                );
-              })}
+              {row.map((key) => (
+                <Pressable
+                  key={key}
+                  style={styles.keypadKey}
+                  onPress={() => handleKeyPress(key)}
+                >
+                  <Text style={[styles.keypadText, { color: colors.text }]}>
+                    {key}
+                  </Text>
+                </Pressable>
+              ))}
             </View>
           ))}
         </View>
@@ -359,7 +362,6 @@ export default function ConverterScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.primary,
   },
   topSection: {
     flex: 1.1,
@@ -371,15 +373,12 @@ const styles = StyleSheet.create({
   },
   backgroundLeft: {
     flex: 1,
-    backgroundColor: COLORS.primary,
   },
   backgroundRight: {
     flex: 1,
-    backgroundColor: COLORS.secondary,
   },
   bottomSection: {
     flex: 1,
-    backgroundColor: COLORS.primary,
     paddingTop: 20,
   },
   header: {
@@ -389,23 +388,28 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 8,
   },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   appName: {
-    color: COLORS.text,
     fontSize: 16,
     letterSpacing: 0.4,
     fontWeight: '500',
+  },
+  settingsButton: {
+    opacity: 0.7,
   },
   rateInfo: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   rateText: {
-    color: COLORS.text,
     fontSize: 12,
     opacity: 0.7,
   },
   errorText: {
-    color: '#ef4444',
     fontSize: 12,
     fontWeight: '500',
   },
@@ -423,19 +427,16 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   historyText: {
-    color: COLORS.text,
     fontSize: 12,
     opacity: OPACITY.muted,
     lineHeight: 16,
   },
   equalsSign: {
-    color: COLORS.text,
     fontSize: 16,
     fontWeight: '500',
     marginTop: 4,
   },
   resultAmount: {
-    color: COLORS.text,
     fontSize: 28,
     fontWeight: '600',
   },
@@ -458,12 +459,10 @@ const styles = StyleSheet.create({
     paddingLeft: 16,
   },
   currencyCode: {
-    color: COLORS.text,
     fontSize: 14,
     letterSpacing: 0.8,
   },
   amount: {
-    color: COLORS.text,
     fontSize: 22,
     fontWeight: '600',
   },
@@ -480,12 +479,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  operatorButtonSelected: {
-    backgroundColor: COLORS.secondary,
-  },
+  operatorButtonSelected: {},
   equalsButton: {},
   operatorText: {
-    color: COLORS.text,
     fontSize: 16,
     fontWeight: '600',
   },
@@ -507,11 +503,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   keypadText: {
-    color: COLORS.text,
     fontSize: 20,
     fontWeight: '600',
-  },
-  keypadTextAction: {
-    color: COLORS.text,
   },
 });

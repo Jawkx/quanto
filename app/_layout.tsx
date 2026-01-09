@@ -4,19 +4,11 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import 'react-native-reanimated';
 
 import { CurrencyProvider } from '@/context/CurrencyContext';
-
-const AppTheme = {
-  ...DarkTheme,
-  colors: {
-    ...DarkTheme.colors,
-    background: '#030712',
-    card: '#030712',
-  },
-};
+import { AppThemeProvider, useTheme } from '@/context/ThemeContext';
 
 const queryClient = new QueryClient();
 
@@ -60,24 +52,53 @@ export default function RootLayout() {
 function RootLayoutNav() {
   return (
     <QueryClientProvider client={queryClient}>
-      <CurrencyProvider>
-        <ThemeProvider value={AppTheme}>
-          <Stack
-            screenOptions={{
-              contentStyle: { backgroundColor: '#030712' },
-            }}
-          >
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen
-              name="currency-selector"
-              options={{
-                presentation: 'modal',
-                headerShown: false,
-              }}
-            />
-          </Stack>
-        </ThemeProvider>
-      </CurrencyProvider>
+      <AppThemeProvider>
+        <CurrencyProvider>
+          <ThemedStack />
+        </CurrencyProvider>
+      </AppThemeProvider>
     </QueryClientProvider>
+  );
+}
+
+function ThemedStack() {
+  const { colors } = useTheme();
+
+  const navTheme = useMemo(
+    () => ({
+      ...DarkTheme,
+      colors: {
+        ...DarkTheme.colors,
+        background: colors.background,
+        card: colors.background,
+      },
+    }),
+    [colors.background]
+  );
+
+  return (
+    <ThemeProvider value={navTheme}>
+      <Stack
+        screenOptions={{
+          contentStyle: { backgroundColor: colors.background },
+        }}
+      >
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen
+          name="currency-selector"
+          options={{
+            presentation: 'modal',
+            headerShown: false,
+          }}
+        />
+        <Stack.Screen
+          name="settings"
+          options={{
+            presentation: 'modal',
+            headerShown: false,
+          }}
+        />
+      </Stack>
+    </ThemeProvider>
   );
 }
