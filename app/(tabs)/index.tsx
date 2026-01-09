@@ -276,7 +276,7 @@ const styles = StyleSheet.create({
   },
   backgroundRight: {
     flex: 1,
-    backgroundColor: COLORS.primary,
+    backgroundColor: COLORS.secondary,
   },
   bottomSection: {
     flex: 1,
