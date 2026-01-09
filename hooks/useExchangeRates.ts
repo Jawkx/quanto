@@ -10,7 +10,6 @@ interface UseExchangeRatesResult {
   rates: Record<string, number> | null;
   loading: boolean;
   error: string | null;
-  lastUpdated: Date | null;
   refetch: () => Promise<void>;
   convert: (amount: number, from: string, to: string) => number | null;
 }
@@ -40,7 +39,6 @@ export function useExchangeRates(): UseExchangeRatesResult {
     rates: data?.rates ?? null,
     loading: isLoading,
     error: error?.message ?? null,
-    lastUpdated: data?.timestamp ? new Date(data.timestamp * 1000) : null,
     refetch: async () => { await refetch(); },
     convert,
   };
