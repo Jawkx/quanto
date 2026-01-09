@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, PanResponder, Pressable, StyleSheet, Text, View } from 'react-native';
 import { currencies } from '@/constants/currencies';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { router } from 'expo-router';
 import { useExchangeRates } from '@/hooks/useExchangeRates';
@@ -58,6 +58,7 @@ function formatCurrency(amount: number, currency: string) {
 }
 
 export default function ConverterScreen() {
+  const insets = useSafeAreaInsets();
   const [input, setInput] = useState('0');
   const [firstOperand, setFirstOperand] = useState<number | null>(null);
   const [operator, setOperator] = useState<Operator | null>(null);
@@ -214,8 +215,8 @@ export default function ConverterScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar style="light" backgroundColor={COLORS.primary} />
+    <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom']}>
+      <StatusBar style="light" backgroundColor="transparent" translucent />
 
       <View style={styles.topSection}>
         <View style={styles.backgroundSplit} pointerEvents="none">
@@ -223,7 +224,7 @@ export default function ConverterScreen() {
           <View style={styles.backgroundRight} />
         </View>
 
-        <View style={styles.header}>
+        <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
           <Text style={styles.appName}>Quanto</Text>
           <View style={styles.rateInfo}>
             {loading ? (
