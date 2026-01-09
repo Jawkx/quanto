@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, PanResponder, Pressable, StyleSheet, Text, View } from 'react-native';
+import { currencies } from '@/constants/currencies';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { router } from 'expo-router';
@@ -61,13 +62,65 @@ export default function ConverterScreen() {
   const [firstOperand, setFirstOperand] = useState<number | null>(null);
   const [operator, setOperator] = useState<Operator | null>(null);
 
-  const { sourceCurrency, targetCurrency, setSelectingFor } = useCurrency();
+  const { sourceCurrency, targetCurrency, setSourceCurrency, setTargetCurrency, setSelectingFor } = useCurrency();
   const { rates, loading, error, refetch, convert } = useExchangeRates();
 
   const openCurrencySelector = (side: 'source' | 'target') => {
     setSelectingFor(side);
     router.push('/currency-selector');
   };
+
+  const sourceCurrencyRef = useRef(sourceCurrency);
+  const targetCurrencyRef = useRef(targetCurrency);
+  sourceCurrencyRef.current = sourceCurrency;
+  targetCurrencyRef.current = targetCurrency;
+
+  const getCurrencyIndex = (code: string) => currencies.findIndex(c => c.code === code);
+
+  const cycleCurrency = (current: string, direction: 'next' | 'prev') => {
+    const currentIndex = getCurrencyIndex(current);
+    if (currentIndex === -1) return currencies[0].code;
+
+    const newIndex = direction === 'next'
+      ? (currentIndex + 1) % currencies.length
+      : (currentIndex - 1 + currencies.length) % currencies.length;
+
+    return currencies[newIndex].code;
+  };
+
+  const SWIPE_THRESHOLD = 50;
+
+  const sourcePanResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => false,
+      onMoveShouldSetPanResponder: (_, gestureState) => {
+        return Math.abs(gestureState.dx) > 10 && Math.abs(gestureState.dy) < Math.abs(gestureState.dx);
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        if (gestureState.dx > SWIPE_THRESHOLD) {
+          setSourceCurrency(cycleCurrency(sourceCurrencyRef.current, 'prev'));
+        } else if (gestureState.dx < -SWIPE_THRESHOLD) {
+          setSourceCurrency(cycleCurrency(sourceCurrencyRef.current, 'next'));
+        }
+      },
+    })
+  ).current;
+
+  const targetPanResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => false,
+      onMoveShouldSetPanResponder: (_, gestureState) => {
+        return Math.abs(gestureState.dx) > 10 && Math.abs(gestureState.dy) < Math.abs(gestureState.dx);
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        if (gestureState.dx > SWIPE_THRESHOLD) {
+          setTargetCurrency(cycleCurrency(targetCurrencyRef.current, 'prev'));
+        } else if (gestureState.dx < -SWIPE_THRESHOLD) {
+          setTargetCurrency(cycleCurrency(targetCurrencyRef.current, 'next'));
+        }
+      },
+    })
+  ).current;
 
   const currentValue = useMemo(() => Number(input || '0'), [input]);
   const isCalculating = operator !== null && firstOperand !== null;
@@ -174,35 +227,39 @@ export default function ConverterScreen() {
 
         <View style={styles.conversionArea}>
           <View style={styles.panelGroup}>
-            <Pressable
-              style={[styles.panel, styles.leftPanel]}
-              onPress={() => openCurrencySelector('source')}
-            >
-              <Text style={styles.currencyCode}>{sourceCurrency}</Text>
-              {isCalculating ? (
-                <>
-                  <View style={styles.expressionRow}>
-                    <Text style={[styles.amount, { opacity: OPACITY.muted }]}>
-                      {formatNumber(firstOperand)} {operator}{' '}
-                    </Text>
-                    <Text style={styles.amount}>
-                      {formatNumber(currentValue)}
-                    </Text>
-                  </View>
-                  <Text style={[styles.equalsSign, { opacity: OPACITY.muted }]}>=</Text>
-                  <Text style={styles.resultAmount}>{formatNumber(result)}</Text>
-                </>
-              ) : (
-                <Text style={styles.amount}>{formatNumber(currentValue)}</Text>
-              )}
-            </Pressable>
-            <Pressable
-              style={[styles.panel, styles.rightPanel]}
-              onPress={() => openCurrencySelector('target')}
-            >
-              <Text style={styles.currencyCode}>{targetCurrency}</Text>
-              <Text style={styles.amount}>{displayTarget}</Text>
-            </Pressable>
+            <View style={styles.panelWrapper} {...sourcePanResponder.panHandlers}>
+              <Pressable
+                style={[styles.panel, styles.leftPanel]}
+                onPress={() => openCurrencySelector('source')}
+              >
+                <Text style={styles.currencyCode}>{sourceCurrency}</Text>
+                {isCalculating ? (
+                  <>
+                    <View style={styles.expressionRow}>
+                      <Text style={[styles.amount, { opacity: OPACITY.muted }]}>
+                        {formatNumber(firstOperand)} {operator}{' '}
+                      </Text>
+                      <Text style={styles.amount}>
+                        {formatNumber(currentValue)}
+                      </Text>
+                    </View>
+                    <Text style={[styles.equalsSign, { opacity: OPACITY.muted }]}>=</Text>
+                    <Text style={styles.resultAmount}>{formatNumber(result)}</Text>
+                  </>
+                ) : (
+                  <Text style={styles.amount}>{formatNumber(currentValue)}</Text>
+                )}
+              </Pressable>
+            </View>
+            <View style={styles.panelWrapper} {...targetPanResponder.panHandlers}>
+              <Pressable
+                style={[styles.panel, styles.rightPanel]}
+                onPress={() => openCurrencySelector('target')}
+              >
+                <Text style={styles.currencyCode}>{targetCurrency}</Text>
+                <Text style={styles.amount}>{displayTarget}</Text>
+              </Pressable>
+            </View>
           </View>
         </View>
       </View>
@@ -352,6 +409,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-end',
     gap: 16,
+  },
+  panelWrapper: {
+    flex: 1,
   },
   panel: {
     flex: 1,
