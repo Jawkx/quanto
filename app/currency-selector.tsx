@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import {
   FlatList,
   KeyboardAvoidingView,
@@ -6,7 +6,6 @@ import {
   Pressable,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -15,6 +14,8 @@ import { router } from 'expo-router';
 import { currencies, Currency } from '@/constants/currencies';
 import { useCurrency } from '@/context/CurrencyContext';
 import { useTheme } from '@/context/ThemeContext';
+import { CurrencyListItem } from '@/components/CurrencyListItem';
+import { SearchBar } from '@/components/SearchBar';
 
 export default function CurrencySelector() {
   const [search, setSearch] = useState('');
@@ -40,7 +41,7 @@ export default function CurrencySelector() {
     );
   }, [search]);
 
-  const handleSelect = (currency: Currency) => {
+  const handleSelect = useCallback((currency: Currency) => {
     if (selectingFor === 'source') {
       setSourceCurrency(currency.code);
     } else if (selectingFor === 'target') {
@@ -48,28 +49,20 @@ export default function CurrencySelector() {
     }
     setSelectingFor(null);
     router.back();
-  };
+  }, [selectingFor, setSourceCurrency, setTargetCurrency, setSelectingFor]);
 
   const handleClose = () => {
     setSelectingFor(null);
     router.back();
   };
 
-  const renderCurrency = ({ item }: { item: Currency }) => {
-    const isSelected = item.code === currentSelection;
-    return (
-      <Pressable
-        style={[styles.currencyItem, isSelected && { backgroundColor: colors.selected }]}
-        onPress={() => handleSelect(item)}
-      >
-        <View style={styles.currencyInfo}>
-          <Text style={[styles.currencyCode, { color: colors.text }]}>{item.code}</Text>
-          <Text style={[styles.currencyName, { color: colors.textMuted }]}>{item.name}</Text>
-        </View>
-        <Text style={[styles.currencySymbol, { color: colors.textMuted }]}>{item.symbol}</Text>
-      </Pressable>
-    );
-  };
+  const renderCurrency = useCallback(({ item }: { item: Currency }) => (
+    <CurrencyListItem
+      item={item}
+      isSelected={item.code === currentSelection}
+      onSelect={handleSelect}
+    />
+  ), [currentSelection, handleSelect]);
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
@@ -94,19 +87,11 @@ export default function CurrencySelector() {
           keyboardShouldPersistTaps="handled"
         />
 
-        <SafeAreaView edges={['bottom']} style={[styles.searchWrapper, { backgroundColor: colors.background }]}>
-          <View style={styles.searchContainer}>
-            <TextInput
-              style={[styles.searchInput, { backgroundColor: colors.secondary, color: colors.text }]}
-              placeholder="Search currency..."
-              placeholderTextColor={colors.textMuted}
-              value={search}
-              onChangeText={setSearch}
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-          </View>
-        </SafeAreaView>
+        <SearchBar
+          value={search}
+          onChangeText={setSearch}
+          placeholder="Search currency..."
+        />
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -126,42 +111,7 @@ const styles = StyleSheet.create({
   keyboardAvoid: {
     flex: 1,
   },
-  searchWrapper: {},
-  searchContainer: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  searchInput: {
-    borderRadius: 10,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 16,
-  },
   listContent: {
     paddingHorizontal: 16,
-  },
-  currencyItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 14,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    marginBottom: 4,
-  },
-  currencyInfo: {
-    flex: 1,
-  },
-  currencyCode: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  currencyName: {
-    fontSize: 14,
-    marginTop: 2,
-  },
-  currencySymbol: {
-    fontSize: 18,
-    marginLeft: 12,
   },
 });
