@@ -15,7 +15,8 @@
     },
     "ios": {
       "supportsTablet": true,
-      "backgroundColor": "#030712"
+      "backgroundColor": "#030712",
+      "bundleIdentifier": "com.jawkx.quanto"
     },
     "android": {
       "adaptiveIcon": {
@@ -24,7 +25,8 @@
       },
       "backgroundColor": "#030712",
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.jawkx.quanto"
     },
     "web": {
       "bundler": "metro",
