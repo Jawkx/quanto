@@ -138,7 +138,7 @@ export default function ConverterScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar style="light" />
+      <StatusBar style="light" backgroundColor={COLORS.primary} />
 
       <View style={styles.topSection}>
         <View style={styles.backgroundSplit} pointerEvents="none">
@@ -260,7 +260,7 @@ export default function ConverterScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.secondary,
+    backgroundColor: COLORS.primary,
   },
   topSection: {
     flex: 1.1,
