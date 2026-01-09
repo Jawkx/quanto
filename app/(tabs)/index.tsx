@@ -10,8 +10,8 @@ import { useCurrency } from '@/context/CurrencyContext';
 const MAX_DIGITS = 12;
 
 const COLORS = {
-  primary: '#030712',
-  secondary: '#374151',
+  primary: '#374151',
+  secondary: '#111827',
   text: '#ffffff',
 };
 
