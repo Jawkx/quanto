@@ -2,11 +2,11 @@ import { useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
+import { router } from 'expo-router';
 import { useExchangeRates } from '@/hooks/useExchangeRates';
+import { useCurrency } from '@/context/CurrencyContext';
 
 const MAX_DIGITS = 12;
-const SOURCE_CURRENCY = 'USD';
-const TARGET_CURRENCY = 'JPY';
 
 const COLORS = {
   primary: '#030712',
@@ -42,9 +42,9 @@ function formatNumber(n: number): string {
   return Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 }
 
-function formatCurrency(amount: number, currency: 'USD' | 'JPY') {
+function formatCurrency(amount: number, currency: string) {
   try {
-    return new Intl.NumberFormat(currency === 'USD' ? 'en-US' : 'ja-JP', {
+    return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency,
       maximumFractionDigits: 0,
@@ -52,7 +52,7 @@ function formatCurrency(amount: number, currency: 'USD' | 'JPY') {
   } catch {
     const rounded = Math.round(amount);
     const grouped = rounded.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-    return currency === 'USD' ? `$${grouped}` : `¥${grouped}`;
+    return `${currency} ${grouped}`;
   }
 }
 
@@ -61,7 +61,13 @@ export default function ConverterScreen() {
   const [firstOperand, setFirstOperand] = useState<number | null>(null);
   const [operator, setOperator] = useState<Operator | null>(null);
 
-  const { rates, loading, error, lastUpdated, refetch, convert } = useExchangeRates();
+  const { sourceCurrency, targetCurrency, setSelectingFor } = useCurrency();
+  const { rates, loading, error, refetch, convert } = useExchangeRates();
+
+  const openCurrencySelector = (side: 'source' | 'target') => {
+    setSelectingFor(side);
+    router.push('/currency-selector');
+  };
 
   const currentValue = useMemo(() => Number(input || '0'), [input]);
   const isCalculating = operator !== null && firstOperand !== null;
@@ -72,18 +78,23 @@ export default function ConverterScreen() {
   }, [isCalculating, firstOperand, currentValue, operator]);
 
   const resultAmount = useMemo(() => {
-    const converted = convert(result, SOURCE_CURRENCY, TARGET_CURRENCY);
+    const converted = convert(result, sourceCurrency, targetCurrency);
     return converted ?? result; // Fallback to same value if conversion fails
-  }, [result, convert]);
+  }, [result, convert, sourceCurrency, targetCurrency]);
 
-  const displaySource = useMemo(() => formatCurrency(result, SOURCE_CURRENCY), [result]);
-  const displayTarget = useMemo(() => formatCurrency(resultAmount, TARGET_CURRENCY), [resultAmount]);
+  const displayTarget = useMemo(
+    () => formatCurrency(resultAmount, targetCurrency),
+    [resultAmount, targetCurrency]
+  );
 
   const rateDisplay = useMemo(() => {
     if (!rates) return null;
-    const rate = rates[TARGET_CURRENCY];
-    return rate ? `1 ${SOURCE_CURRENCY} = ${rate.toFixed(2)} ${TARGET_CURRENCY}` : null;
-  }, [rates]);
+    const sourceRate = rates[sourceCurrency] || 1;
+    const targetRate = rates[targetCurrency];
+    if (!targetRate) return null;
+    const rate = targetRate / sourceRate;
+    return `1 ${sourceCurrency} = ${rate.toFixed(2)} ${targetCurrency}`;
+  }, [rates, sourceCurrency, targetCurrency]);
 
   // Operators are muted when there's no meaningful input
   const operatorsEnabled = input !== '0' || firstOperand !== null;
@@ -163,8 +174,11 @@ export default function ConverterScreen() {
 
         <View style={styles.conversionArea}>
           <View style={styles.panelGroup}>
-            <View style={[styles.panel, styles.leftPanel]}>
-              <Text style={styles.currencyCode}>{SOURCE_CURRENCY}</Text>
+            <Pressable
+              style={[styles.panel, styles.leftPanel]}
+              onPress={() => openCurrencySelector('source')}
+            >
+              <Text style={styles.currencyCode}>{sourceCurrency}</Text>
               {isCalculating ? (
                 <>
                   <View style={styles.expressionRow}>
@@ -181,11 +195,14 @@ export default function ConverterScreen() {
               ) : (
                 <Text style={styles.amount}>{formatNumber(currentValue)}</Text>
               )}
-            </View>
-            <View style={[styles.panel, styles.rightPanel]}>
-              <Text style={styles.currencyCode}>{TARGET_CURRENCY}</Text>
+            </Pressable>
+            <Pressable
+              style={[styles.panel, styles.rightPanel]}
+              onPress={() => openCurrencySelector('target')}
+            >
+              <Text style={styles.currencyCode}>{targetCurrency}</Text>
               <Text style={styles.amount}>{displayTarget}</Text>
-            </View>
+            </Pressable>
           </View>
         </View>
       </View>
@@ -276,7 +293,7 @@ const styles = StyleSheet.create({
   },
   backgroundRight: {
     flex: 1,
-    backgroundColor: COLORS.secondary,
+    backgroundColor: COLORS.primary,
   },
   bottomSection: {
     flex: 1,
