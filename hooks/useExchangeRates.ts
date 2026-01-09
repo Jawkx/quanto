@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import {
   ExchangeRatesResponse,
   fetchLatestRates,
@@ -14,28 +15,14 @@ interface UseExchangeRatesResult {
   convert: (amount: number, from: string, to: string) => number | null;
 }
 
+const ONE_HOUR_MS = 1000 * 60 * 60;
+
 export function useExchangeRates(): UseExchangeRatesResult {
-  const [data, setData] = useState<ExchangeRatesResponse | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetch = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const response = await fetchLatestRates();
-      setData(response);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch rates');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetch();
-  }, [fetch]);
+  const { data, isLoading, error, refetch } = useQuery<ExchangeRatesResponse, Error>({
+    queryKey: ['exchangeRates'],
+    queryFn: fetchLatestRates,
+    staleTime: ONE_HOUR_MS,
+  });
 
   const convert = useCallback(
     (amount: number, from: string, to: string): number | null => {
@@ -51,10 +38,10 @@ export function useExchangeRates(): UseExchangeRatesResult {
 
   return {
     rates: data?.rates ?? null,
-    loading,
-    error,
+    loading: isLoading,
+    error: error?.message ?? null,
     lastUpdated: data?.timestamp ? new Date(data.timestamp * 1000) : null,
-    refetch: fetch,
+    refetch: async () => { await refetch(); },
     convert,
   };
 }
