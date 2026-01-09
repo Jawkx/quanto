@@ -1,10 +1,12 @@
 import { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
+import { useExchangeRates } from '@/hooks/useExchangeRates';
 
-const EXCHANGE_RATE = 150;
 const MAX_DIGITS = 12;
+const SOURCE_CURRENCY = 'USD';
+const TARGET_CURRENCY = 'JPY';
 
 const COLORS = {
   primary: '#030712',
@@ -59,6 +61,8 @@ export default function ConverterScreen() {
   const [firstOperand, setFirstOperand] = useState<number | null>(null);
   const [operator, setOperator] = useState<Operator | null>(null);
 
+  const { rates, loading, error, lastUpdated, refetch, convert } = useExchangeRates();
+
   const currentValue = useMemo(() => Number(input || '0'), [input]);
   const isCalculating = operator !== null && firstOperand !== null;
 
@@ -67,10 +71,19 @@ export default function ConverterScreen() {
     return calculate(firstOperand, currentValue, operator);
   }, [isCalculating, firstOperand, currentValue, operator]);
 
-  const resultAmount = useMemo(() => result * EXCHANGE_RATE, [result]);
+  const resultAmount = useMemo(() => {
+    const converted = convert(result, SOURCE_CURRENCY, TARGET_CURRENCY);
+    return converted ?? result; // Fallback to same value if conversion fails
+  }, [result, convert]);
 
-  const displaySource = useMemo(() => formatCurrency(result, 'USD'), [result]);
-  const displayTarget = useMemo(() => formatCurrency(resultAmount, 'JPY'), [resultAmount]);
+  const displaySource = useMemo(() => formatCurrency(result, SOURCE_CURRENCY), [result]);
+  const displayTarget = useMemo(() => formatCurrency(resultAmount, TARGET_CURRENCY), [resultAmount]);
+
+  const rateDisplay = useMemo(() => {
+    if (!rates) return null;
+    const rate = rates[TARGET_CURRENCY];
+    return rate ? `1 ${SOURCE_CURRENCY} = ${rate.toFixed(2)} ${TARGET_CURRENCY}` : null;
+  }, [rates]);
 
   // Operators are muted when there's no meaningful input
   const operatorsEnabled = input !== '0' || firstOperand !== null;
@@ -135,15 +148,23 @@ export default function ConverterScreen() {
 
         <View style={styles.header}>
           <Text style={styles.appName}>Quanto</Text>
-          <Pressable>
-            <Text style={styles.settings}>Settings</Text>
-          </Pressable>
+          <View style={styles.rateInfo}>
+            {loading ? (
+              <ActivityIndicator size="small" color={COLORS.text} />
+            ) : error ? (
+              <Pressable onPress={refetch}>
+                <Text style={styles.errorText}>Tap to retry</Text>
+              </Pressable>
+            ) : rateDisplay ? (
+              <Text style={styles.rateText}>{rateDisplay}</Text>
+            ) : null}
+          </View>
         </View>
 
         <View style={styles.conversionArea}>
           <View style={styles.panelGroup}>
             <View style={[styles.panel, styles.leftPanel]}>
-              <Text style={styles.currencyCode}>USD</Text>
+              <Text style={styles.currencyCode}>{SOURCE_CURRENCY}</Text>
               {isCalculating ? (
                 <>
                   <View style={styles.expressionRow}>
@@ -162,7 +183,7 @@ export default function ConverterScreen() {
               )}
             </View>
             <View style={[styles.panel, styles.rightPanel]}>
-              <Text style={styles.currencyCode}>JPY</Text>
+              <Text style={styles.currencyCode}>{TARGET_CURRENCY}</Text>
               <Text style={styles.amount}>{displayTarget}</Text>
             </View>
           </View>
@@ -255,7 +276,7 @@ const styles = StyleSheet.create({
   },
   backgroundRight: {
     flex: 1,
-    backgroundColor: COLORS.secondary,
+    backgroundColor: COLORS.primary,
   },
   bottomSection: {
     flex: 1,
@@ -275,9 +296,18 @@ const styles = StyleSheet.create({
     letterSpacing: 0.4,
     fontWeight: '500',
   },
-  settings: {
+  rateInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  rateText: {
     color: COLORS.text,
-    fontSize: 15,
+    fontSize: 12,
+    opacity: 0.7,
+  },
+  errorText: {
+    color: '#ef4444',
+    fontSize: 12,
     fontWeight: '500',
   },
   conversionArea: {
