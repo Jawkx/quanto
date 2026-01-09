@@ -18,8 +18,7 @@ export {
 } from 'expo-router';
 
 export const unstable_settings = {
-  // Keep the initial route on the tabs group.
-  initialRouteName: '(tabs)',
+  initialRouteName: 'index',
 };
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
@@ -83,7 +82,7 @@ function ThemedStack() {
           contentStyle: { backgroundColor: colors.background },
         }}
       >
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="index" options={{ headerShown: false }} />
         <Stack.Screen
           name="currency-selector"
           options={{
